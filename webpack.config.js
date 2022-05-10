@@ -28,6 +28,30 @@ module.exports = {
       {
         test: /\.txt$/,
         use: path.resolve(__dirname, 'loaders', 'rawLoader.js')
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader']
+      },
+      {
+        test: /\.less$/,
+        use: ['style-loader', 'css-loader', 'less-loader']
+      },
+      {
+        test: /\.scss$/,
+        use: ['style-loader', 'css-loader', 'sass-loader']
+      },
+      {
+        test: /\.(jpg|png|gif|bmp)$/,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: '[hash:10].[ext]',
+              esModule: true
+            }
+          }
+        ]
       }
     ]
   },
