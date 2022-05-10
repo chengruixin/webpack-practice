@@ -20,7 +20,7 @@ module.exports = {
     port: 3691,
     open: true, // 自动打开浏览器
     devMiddleware: {
-      writeToDisk: false,
+      writeToDisk: true,
     }
   },
   module: {
@@ -43,15 +43,15 @@ module.exports = {
       },
       {
         test: /\.(jpg|png|gif|bmp)$/,
-        use: [
-          {
-            loader: 'file-loader',
-            options: {
-              name: '[hash:10].[ext]',
-              esModule: true
-            }
-          }
-        ]
+        use: [{
+          loader: 'url-loader',
+          options: {
+            name: 'heelo-[hash].[ext]',
+            esModule: false,
+            limit: 1 * 1024
+          },
+        }],
+        type: 'javascript/auto'
       }
     ]
   },

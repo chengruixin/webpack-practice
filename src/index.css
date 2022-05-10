@@ -3,3 +3,10 @@
 body {
     color: red;
 }
+
+#img-box {
+    border: 1px solid red;
+    width: 696px;
+    height: 564px;
+    background-image: url('./images/logo.png');
+}

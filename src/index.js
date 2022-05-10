@@ -2,9 +2,9 @@ import content from './hello.txt';
 import './index.css';
 import './index.less';
 import './index.scss';
-import logo from './assets/images/logo.png';
-
-console.log(content);
+import logo from './images/logo.png';
+// const logo = require('./images/logo.png');
+// console.log(content);
 
 // append image
 const img = new Image();
