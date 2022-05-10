@@ -7,13 +7,13 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "main.js",
-    publicPath: '/', // is only webpacked js file
+    publicPath: '/', // 从 entry 定义打包的文件，到打包成 path + filename后的output，这个output被访问的前缀即为publicPath
   },
   devServer: {
     static: [
       {
         directory: path.resolve(__dirname, 'static'),
-        publicPath: '/assets', // this is for all static resources prefix
+        publicPath: '/prefix', // 访问 __dirname + static 的路径的前缀
       }
     ], // 静态资源文件根目录. e.g dist/show.txt will be accessed by /show.txt
     compress: true, // 是否启动压缩
