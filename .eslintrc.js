@@ -15,6 +15,6 @@ module.exports = {
   rules: {
     'indent': ['error', 2],
     'quotes': 'off',
-    'no-console': 'error',
+    'no-console': 'warn',
   }
 }
