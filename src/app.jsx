@@ -1,9 +1,11 @@
 import React from 'react';
 
 export default function App() {
-    return (
-        <div>
-            Hello webpack react.
-        </div>
-    )
+  return (
+    <div> 
+      Hello webpack react.
+    </div>
+  )
 }
+
+console.log(1);

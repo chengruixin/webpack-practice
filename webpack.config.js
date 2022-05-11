@@ -1,5 +1,6 @@
 const path = require("path");
 const HTMLWebpackPlugin = require('html-webpack-plugin');
+const ESLintPlugin = require('eslint-webpack-plugin');
 
 module.exports = {
   mode: "development",
@@ -62,9 +63,9 @@ module.exports = {
         use: [{
           loader: 'url-loader',
           options: {
-            name: 'heelo-[hash].[ext]',
+            name: '[hash:10].[ext]',
             esModule: false,
-            limit: 1 * 1024
+            limit: 16 * 1024
           },
         }],
         type: 'javascript/auto'
@@ -73,6 +74,13 @@ module.exports = {
   },
 
   plugins: [
+    new ESLintPlugin({
+      extensions: ['js', 'ts', 'jsx', 'tsx'],
+      // fix: true,
+      failOnError: true,
+      failOnWarning: false,
+      files: './src'
+    }),
     new HTMLWebpackPlugin({
       template: './src/index.html'
     })
