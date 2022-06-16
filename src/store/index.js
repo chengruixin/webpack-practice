@@ -1,51 +1,6 @@
-const { useState } = require("react");
+const { useState, useEffect } = require("react");
 
-const obj = {
-  name: 'ruixin',
-  age: 24,
-  detail: {
-    info1: 'info1',
-    info2: 'info2',
-    deeperDetail: {
-      deeperInfo1: '1',
-      deeperInfo2: '2'
-    },
-    list: [1, 2, 3, 4]
-  }
-}
-
-let lastTarget, lastProperty = null;
-const mapTargetProp2Trigger = new Map();
-
-const handler = {
-  get(target, property) {
-    lastTarget = target;
-    lastProperty = property;
-
-    return Reflect.get(...arguments);
-  },
-
-  set(target, property, val) {
-    if (mapTargetProp2Trigger.has(target) && mapTargetProp2Trigger.get(target).has(property)) {
-      setTimeout(() => {
-        const callFuncs = mapTargetProp2Trigger.get(target).get(property);
-        
-        while (callFuncs.length > 0) {
-          callFuncs.shift()();
-        }
-      });
-    }
-
-
-    if (typeof target[property] === 'object') {
-      const proxied = proxify(val, handler);
-      return Reflect.set(target, property, proxied);
-    }
-    return Reflect.set(...arguments);
-  }
-}
-
-function proxify(obj) {
+function proxify(obj, handler) {
   const plainObj = {};
   const referenceObj = {};
 
@@ -56,11 +11,10 @@ function proxify(obj) {
       referenceObj[key] = obj[key];
     }
   }
-
   const plainProxied = new Proxy(plainObj, handler);
 
   for (const key of Object.keys(referenceObj)) {
-    referenceObj[key] = proxify(referenceObj[key]);
+    referenceObj[key] = proxify(referenceObj[key], handler);
   }
 
   const res = new Proxy({
@@ -68,34 +22,100 @@ function proxify(obj) {
     ...referenceObj
   }, handler);
 
+
   return res;
 }
 
-export const proxiedObj = proxify(obj);
+const createHandler = (context) => {
+  const res = {
+    get(target, property) {
+      context.lastTarget = target;
+      context.lastProperty = property;
 
-function connect(selectorFunc, triggerFunc) {
-  const val = selectorFunc(proxiedObj);
+      
+      return Reflect.get(...arguments);
+    },
+  
+    set(target, property, val) {
+      const { varReference } = context;
 
-  if (!mapTargetProp2Trigger.has(lastTarget)) {
-    mapTargetProp2Trigger.set(lastTarget, new Map());
+      if (varReference.has(target) && varReference.get(target).has(property)) {
+        const callbackArr = varReference.get(target).get(property);
+        while (callbackArr.length) {
+          callbackArr.shift()();
+        }
+      } 
+  
+      if (typeof target[property] === 'object') {
+        const proxied = proxify(val, res);
+        return Reflect.set(target, property, proxied);
+      }
+      return Reflect.set(...arguments);
+    }
   }
 
-  if (!mapTargetProp2Trigger.get(lastTarget).has(lastProperty)) {
-    mapTargetProp2Trigger.get(lastTarget).set(lastProperty, []);
-  }
-
-  mapTargetProp2Trigger.get(lastTarget).get(lastProperty).push(triggerFunc);
-
-  return val;
+  return res;
 }
 
+function connect(context, selector, callback) {
+  const val = selector(context.proxiedObj);
+  const {
+    varReference,
+    lastTarget,
+    lastProperty
+  } = context;
 
-export function useConnector(selectorFunc) {
-  const [, forceUpdate] = useState({});
+  if (!varReference.has(lastTarget)) {
+    varReference.set(context.lastTarget, new Map());
+  }
 
-  const val = connect(selectorFunc, () => {
-    forceUpdate({});
+  if (!varReference.get(lastTarget).has(lastProperty)) {
+    varReference.get(lastTarget).set(lastProperty, []);
+  }
+  
+  varReference.get(lastTarget).get(lastProperty).push(() => {
+    callback();
   });
 
-  return val;
+  return {
+    value: val,
+    disConnect: () => {
+      const toDeleteIndex = varReference.get(lastTarget).get(lastProperty).indexOf(callback);
+      varReference.get(lastTarget).get(lastProperty).splice(toDeleteIndex, 1);
+    }
+  };
+}
+
+function createContext(dataSource) {
+  const context = {
+    lastTarget: null,
+    lastProperty: null,
+    varReference: new Map(),
+    proxiedObj: null
+  };
+
+  const handler = createHandler(context);
+  const proxiedObj = proxify(dataSource, handler);
+
+  context.proxiedObj = proxiedObj;
+
+  return context;
+}
+
+export function createStore(dataSource) {
+  const context = createContext(dataSource);
+  function useConnector(selector) {
+    const [, forceUpdate] = useState({});
+    const { value, disConnect } = connect(context, selector, () => {
+      forceUpdate({});
+    });
+    useEffect(() => disConnect, []);
+    return value;
+  }
+
+  return {
+    useConnector,
+    proxied: context.proxiedObj
+  }
+  
 }
