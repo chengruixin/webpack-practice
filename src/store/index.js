@@ -22,7 +22,6 @@ function proxify(obj, handler) {
     ...referenceObj
   }, handler);
 
-
   return res;
 }
 
@@ -31,11 +30,8 @@ const createHandler = (context) => {
     get(target, property) {
       context.lastTarget = target;
       context.lastProperty = property;
-
-      
       return Reflect.get(...arguments);
     },
-  
     set(target, property, val) {
       const { varReference } = context;
 
@@ -50,6 +46,7 @@ const createHandler = (context) => {
         const proxied = proxify(val, res);
         return Reflect.set(target, property, proxied);
       }
+
       return Reflect.set(...arguments);
     }
   }
@@ -58,7 +55,7 @@ const createHandler = (context) => {
 }
 
 function connect(context, selector, callback) {
-  const val = selector(context.proxiedObj);
+  const value = selector(context.proxiedObj);
   const {
     varReference,
     lastTarget,
@@ -78,7 +75,7 @@ function connect(context, selector, callback) {
   });
 
   return {
-    value: val,
+    value,
     disConnect: () => {
       const toDeleteIndex = varReference.get(lastTarget).get(lastProperty).indexOf(callback);
       varReference.get(lastTarget).get(lastProperty).splice(toDeleteIndex, 1);
@@ -102,7 +99,7 @@ function createContext(dataSource) {
   return context;
 }
 
-export function createStore(dataSource) {
+export function createStore(dataSource, reducer) {
   const context = createContext(dataSource);
   function useConnector(selector) {
     const [, forceUpdate] = useState({});
@@ -113,9 +110,26 @@ export function createStore(dataSource) {
     return value;
   }
 
+  function dispatch({ action, payload }) {
+    const reducerAction = reducer({ action, payload });
+    reducerAction(context.proxiedObj);
+  }
+
   return {
     useConnector,
-    proxied: context.proxiedObj
+    dispatch
   }
   
+}
+
+export function combineAllReducers(...reducers) {
+  return chunkData => {
+    for (let i = 0; i < reducers.length; i++) {
+      const reducerAction = reducers[i](chunkData)
+      if (reducerAction) {
+        return reducerAction;
+      }
+    }
+    return null;
+  }
 }

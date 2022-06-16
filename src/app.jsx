@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { createStore } from './store/index';
+import { createStore, combineAllReducers } from './store/index';
 
 const obj = {
   name: 'ruixin',
@@ -15,26 +15,41 @@ const obj = {
   }
 }
 
-const { useConnector, proxied } = createStore(obj);
+const reducer1 = ({ action, payload }) => {
+  switch(action) {
+  case 'PLUS':
+    return state => state.age += payload || 1
+  default:
+    return null
+  }
+}
+
+const reducer2 = ({ action, payload }) => {
+  switch(action) {
+  case 'SET_NAME':
+    return state => state.name = payload
+  default:
+    return null
+  }
+}
+
+const { useConnector, dispatch } = createStore(obj, combineAllReducers(reducer1, reducer2));
 export default function App() {
-  console.log('start')
   const age = useConnector(state => state.age);
   const name = useConnector(state => state.name);
-  // const [val, setVal] = useState(1);
   return (
     <div> 
       Hello, {name} webpack react.
       <div>
         <span>{age}</span>
         <button onClick={() => {
-          proxied.age++;
-          // proxied.name += ' , '
+          dispatch({ action: "PLUS"});
         }}>add</button>
       </div>
 
       <div>
         <input value={name} onInput={e => {
-          proxied.name = e.target.value;
+          dispatch({ action: "SET_NAME", payload: e.target.value});
         }}/>
       </div>
     </div>
